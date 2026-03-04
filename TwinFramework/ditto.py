@@ -9,28 +9,13 @@ class Ditto:
     def set_basic_auth(self, user, password):
         self.basic_auth = (user, password)
 
-    def create_thing(self, attributes, features, namespace=None, name=None, policy_id=None):
-        url = f"http://{self.host}:{self.port}/api/2/things" #todo: TLS on Ditto to use HTTPS
-        payload = {
-            "attributes": attributes,
-            "features": features
-        }
-        if policy_id:
-            payload["policyId"] = policy_id
-
-        if namespace and name:
-            url += f"/{namespace}:{name}" if namespace and name else ""
-            response = requests.put(url, json=payload, auth=self.basic_auth or None)
-        else:
-            response = requests.post(url, json=payload, auth=self.basic_auth or None)
+    def create_thing(self, thing):
+        url = f"http://{self.host}:{self.port}/api/2/things/{thing.id.get_id()}" #todo: TLS on Ditto to use HTTPS
+        response = requests.put(url, json=thing.json(), auth=self.basic_auth or None)
         return response.status_code, response.text
 
-    def create_policy(self, entries, policy_id=None):
-        url = f"http://{self.host}:{self.port}/api/2/policies"
-        if policy_id:
-            url += f"/{policy_id}"
-            response = requests.put(url, json=entries, auth=self.basic_auth or None)
-        else:
-            response = requests.post(url, json=entries, auth=self.basic_auth or None)
+    def create_policy(self, policy):
+        url = f"http://{self.host}:{self.port}/api/2/policies/{policy.id.get_id()}"
+        response = requests.put(url, json=policy.json(), auth=self.basic_auth or None)
         return response.status_code, response.text
 
