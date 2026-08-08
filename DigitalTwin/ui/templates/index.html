@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Robotic Arm Digital Twin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Robotic Arm Digital Twin</h1>
+    <div class="meta">
+      <span class="chip">{{ thing_id }}</span>
+      <span class="status" id="status"><i></i>connecting</span>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="panel stage-panel">
+      <div class="panel-head">Live view</div>
+      <div class="stage">
+        <img class="arm" id="arm" src="{{ url_for('static', filename='roboticArm.png') }}" alt="robotic arm">
+        <span class="base"></span>
+      </div>
+    </section>
+
+    <div class="side">
+      <section class="panel">
+        <div class="panel-head">Angle</div>
+        <svg class="gauge" viewBox="0 0 200 118">
+          <path class="gauge-track" d="M 14 100 A 86 86 0 0 1 186 100" />
+          <path class="gauge-fill" id="gauge-fill" pathLength="180" d="M 186 100 A 86 86 0 0 0 14 100" />
+          <g class="needle" id="needle">
+            <line x1="100" y1="100" x2="100" y2="30" />
+          </g>
+          <circle class="hub" cx="100" cy="100" r="5" />
+          <text class="gauge-label" x="14" y="114">180°</text>
+          <text class="gauge-label end" x="186" y="114">0°</text>
+        </svg>
+        <div class="readout">
+          <span class="value" id="value">--</span><span class="degree">°</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">Position</div>
+        <div class="track"><span class="marker" id="marker"></span></div>
+        <div class="track-labels">
+          <span>180° left</span><span>90°</span><span>right 0°</span>
+        </div>
+        <div class="direction" id="direction">—</div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const arm = document.getElementById("arm");
+    const value = document.getElementById("value");
+    const status = document.getElementById("status");
+    const gaugeFill = document.getElementById("gauge-fill");
+    const needle = document.getElementById("needle");
+    const marker = document.getElementById("marker");
+    const direction = document.getElementById("direction");
+
+    let previous = performance.now();
+
+    function setStatus(state, text) {
+      status.className = "status " + state;
+      status.lastChild.data = text;
+    }
+
+    const source = new EventSource("/stream");
+    source.onopen = () => setStatus("live", "live");
+    source.onerror = () => setStatus("down", "offline");
+
+    source.onmessage = (event) => {
+      const roboticArm = JSON.parse(event.data);
+      const angle = parseFloat(roboticArm.angle);
+
+      const now = performance.now();
+      const duration = Math.min(Math.max(now - previous, 40), 800) + "ms";
+      previous = now;
+
+      for (const element of [arm, gaugeFill, needle, marker]) {
+        element.style.transitionDuration = duration;
+      }
+
+      arm.style.transform = `translate(-48%, 3.7%) rotate(${90 - angle}deg)`;
+      needle.style.transform = `rotate(${90 - angle}deg)`;
+      gaugeFill.style.strokeDashoffset = 180 - angle;
+      marker.style.left = (100 - angle / 1.8) + "%";
+      value.textContent = angle.toFixed(0);
+
+      direction.textContent =
+        angle > 100 ? "turned left" : angle < 80 ? "turned right" : "centered";
+    };
+  </script>
+</body>
+</html>
