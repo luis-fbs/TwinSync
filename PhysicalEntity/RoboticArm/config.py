@@ -1,0 +1,10 @@
+MQTT_HOST = "192.168.3.10"
+MQTT_PORT = 1883
+MQTT_TOPIC = "robotic-arm"
+
+NAMESPACE = "dt"
+THING_NAME = "robotic-arm"
+
+PUBLISH_INTERVAL = 0.03
+SLEEP_TIME = 0.001
+STEP = 0.6
