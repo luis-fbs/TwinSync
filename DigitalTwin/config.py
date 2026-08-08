@@ -47,6 +47,7 @@ THING = {
     "features": {
         "angle": {"properties": {"value": 90}},
         "timestamp": {"properties": {"value": time()}},
+        "safe": {"properties": {"value": True}},
     },
 }
 
