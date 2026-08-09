@@ -19,14 +19,12 @@ angle = 90.0
 timestamp = time.time()
 changed = threading.Condition()
 
-app = Flask(__name__)
-
-def on_open(ws):
+def on_ditto_open(ws):
     print("Connected to Ditto")
     ws.send(SUBSCRIBE)
 
 
-def on_message(ws, message):
+def on_ditto_message(ws, message):
     current_time = time.time()
     global angle, timestamp
 
@@ -45,11 +43,11 @@ def on_message(ws, message):
         changed.notify_all()
 
 
-def on_error(ws, error):
+def on_ditto_error(ws, error):
     print("Error:", error)
 
 
-def on_close(ws, status, msg):
+def on_ditto_close(ws, status, msg):
     print("Ditto connection closed")
 
 
@@ -58,13 +56,14 @@ def listen_to_ditto():
     ws = websocket.WebSocketApp(
         cfg.DITTO_WS,
         header=[f"Authorization: Basic {token}"],
-        on_open=on_open,
-        on_message=on_message,
-        on_error=on_error,
-        on_close=on_close,
+        on_open=on_ditto_open,
+        on_message=on_ditto_message,
+        on_error=on_ditto_error,
+        on_close=on_ditto_close,
     )
     ws.run_forever(ping_interval=30)
 
+app = Flask(__name__)
 
 @app.route("/")
 def index():
