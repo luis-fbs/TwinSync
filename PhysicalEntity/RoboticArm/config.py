@@ -1,6 +1,7 @@
 MQTT_HOST = "192.168.3.10"
 MQTT_PORT = 1883
 MQTT_TOPIC = "robotic-arm"
+MQTT_COMMAND_TOPIC = "robotic-arm/command"
 
 NAMESPACE = "dt"
 THING_NAME = "robotic-arm"

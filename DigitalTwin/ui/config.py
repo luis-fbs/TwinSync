@@ -1,3 +1,5 @@
+MQTT_COMMAND_TOPIC = "robotic-arm/command"
+
 DITTO_WS = "ws://localhost:8080/ws/2"
 DITTO_AUTH = ("ditto", "ditto")
 
