@@ -1,11 +1,12 @@
 import json
+import threading
+
 import config as cfg
 
 from gpiozero.pins.pigpio import PiGPIOFactory
-from gpiozero import AngularServo, Button
+from gpiozero import AngularServo, Button, LED
 from time import sleep, time
 import paho.mqtt.client as mqtt
-
 
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 client.connect(cfg.MQTT_HOST, cfg.MQTT_PORT, 60)
@@ -14,7 +15,7 @@ client.loop_start()
 factory = PiGPIOFactory()
 
 servo = AngularServo(
-    18,
+    cfg.SERVO_GPIO,
     min_angle=0,
     max_angle=180,
     min_pulse_width=0.0005,
@@ -22,8 +23,29 @@ servo = AngularServo(
     pin_factory=factory,
 )
 
-right_button = Button(27, pin_factory=factory)
-left_button = Button(22, pin_factory=factory)
+right_button = Button(cfg.RIGHT_BUTTON_GPIO, pin_factory=factory)
+left_button = Button(cfg.LEFT_BUTTON_GPIO, pin_factory=factory)
+led = LED(cfg.LED_GPIO, pin_factory=factory)
+
+
+def on_command(client, userdata, message):
+    command = json.loads(message.payload.decode("utf-8"))
+
+    if command["safe"]:
+        led.off()
+    else:
+        led.on()
+
+
+def listen_to_commands():
+    command_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    command_client.on_message = on_command
+    command_client.connect(cfg.MQTT_HOST, cfg.MQTT_PORT, 60)
+    command_client.subscribe(cfg.MQTT_COMMAND_TOPIC)
+    command_client.loop_forever()
+
+
+threading.Thread(target=listen_to_commands, daemon=True).start()
 
 angle = 90
 servo.angle = angle
@@ -80,5 +102,7 @@ except KeyboardInterrupt:
 
 finally:
     servo.detach()
+    led.off()
+    led.close()
     client.loop_stop()
     client.disconnect()

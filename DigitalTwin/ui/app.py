@@ -4,6 +4,7 @@ import threading
 import time
 
 import websocket
+import paho.mqtt.client as mqtt
 from flask import Flask, render_template, Response
 
 import config as cfg
@@ -16,8 +17,24 @@ SUBSCRIBE = (
 )
 
 angle = 90.0
-timestamp = time.time()
+is_safe = True
 changed = threading.Condition()
+
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+client.connect(cfg.MQTT_HOST, cfg.MQTT_PORT)
+client.loop_start()
+
+
+def update_safe(value):
+    global is_safe
+
+    if value == is_safe:
+        return
+
+    is_safe = value
+    client.publish(cfg.MQTT_COMMAND_TOPIC, json.dumps({"safe": is_safe}))
+    print(f"safe = {is_safe}")
+
 
 def on_ditto_open(ws):
     print("Connected to Ditto")
@@ -26,7 +43,7 @@ def on_ditto_open(ws):
 
 def on_ditto_message(ws, message):
     current_time = time.time()
-    global angle, timestamp
+    global angle
 
     if message == "START-SEND-EVENTS:ACK":
         print(f"Subscribed to {cfg.THING_ID} / feature 'angle'")
@@ -34,12 +51,14 @@ def on_ditto_message(ws, message):
 
     event = json.loads(message)
     value = event["value"]
-    angle = value["angle"]["properties"]["value"]
-    timestamp = value["timestamp"]["properties"]["value"]
 
-    #ToDo: change safe if time difference is not acceptable
+    if "angle" not in value:
+        return
 
     with changed:
+        angle = value["angle"]["properties"]["value"]
+        timestamp = value["timestamp"]["properties"]["value"]
+        update_safe(current_time - timestamp <= cfg.MAX_OFFSET)
         changed.notify_all()
 
 
@@ -73,11 +92,11 @@ def index():
 @app.route("/stream")
 def stream():
     def events():
-        yield f"data: {angle}\n\n"
+        yield f"data: {json.dumps({'angle': angle, 'safe': is_safe})}\n\n"
         while True:
             with changed:
                 updated = changed.wait(timeout=15)
-                data = {'angle': angle, 'safe': True}
+                data = {'angle': angle, 'safe': is_safe}
             yield f"data: {json.dumps(data)}\n\n" if updated else ": ping\n\n"
 
     return Response(events(), mimetype="text/event-stream")
