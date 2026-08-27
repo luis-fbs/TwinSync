@@ -11,9 +11,22 @@
     <h1>Robotic Arm Digital Twin</h1>
     <div class="meta">
       <span class="chip">{{ thing_id }}</span>
+      <span class="status" id="safety"><i></i>waiting</span>
       <span class="status" id="status"><i></i>connecting</span>
     </div>
   </header>
+
+  <div class="alert" id="alert" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3 1.8 20.5h20.4z" />
+      <line x1="12" y1="9.5" x2="12" y2="14.5" />
+      <line x1="12" y1="17.5" x2="12" y2="17.6" />
+    </svg>
+    <div class="alert-text">
+      <span class="alert-title">Unsafe synchronization</span>
+      <span class="alert-detail">Twin update delayed beyond the maximum offset, the arm is out of sync.</span>
+    </div>
+  </div>
 
   <main class="grid">
     <section class="panel stage-panel">
@@ -57,6 +70,8 @@
     const arm = document.getElementById("arm");
     const value = document.getElementById("value");
     const status = document.getElementById("status");
+    const safety = document.getElementById("safety");
+    const banner = document.getElementById("alert");
     const gaugeFill = document.getElementById("gauge-fill");
     const needle = document.getElementById("needle");
     const marker = document.getElementById("marker");
@@ -69,6 +84,13 @@
       status.lastChild.data = text;
     }
 
+    function setSafety(isSafe) {
+      document.body.classList.toggle("unsafe", !isSafe);
+      banner.hidden = isSafe;
+      safety.className = "status " + (isSafe ? "safe" : "unsafe");
+      safety.lastChild.data = isSafe ? "safe" : "unsafe";
+    }
+
     const source = new EventSource("/stream");
     source.onopen = () => setStatus("live", "live");
     source.onerror = () => setStatus("down", "offline");
@@ -76,6 +98,8 @@
     source.onmessage = (event) => {
       const roboticArm = JSON.parse(event.data);
       const angle = parseFloat(roboticArm.angle);
+
+      setSafety(roboticArm.safe);
 
       const now = performance.now();
       const duration = Math.min(Math.max(now - previous, 40), 800) + "ms";
