@@ -1,6 +1,7 @@
 from time import time
 
-MQTT_HOST = "192.168.3.10"
+MQTT_HOST = "localhost"
+MQTT_BROKER_HOST = "host.docker.internal"
 MQTT_PORT = 1883
 MQTT_TOPIC = "robotic-arm"
 
@@ -56,7 +57,7 @@ CONNECTION = {
     "connectionType": "mqtt-5",
     "connectionStatus": "open",
     "failoverEnabled": True,
-    "uri": f"tcp://{MQTT_HOST}:{MQTT_PORT}",
+    "uri": f"tcp://{MQTT_BROKER_HOST}:{MQTT_PORT}",
     "sources": [
         {
             "addresses": [MQTT_TOPIC],

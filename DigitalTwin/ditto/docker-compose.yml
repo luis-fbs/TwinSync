@@ -142,6 +142,8 @@ services:
         limits:
           memory: 768m
     restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       default:
         aliases:
