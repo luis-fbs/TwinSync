@@ -28,7 +28,7 @@ DT_CERT, DT_KEY = str(CERTS / "digital_twin.crt"), str(CERTS / "digital_twin.key
 # Experiment
 N_MESSAGES = 10000
 RATE_HZ = 10
-SCENARIOS = ("mqtt", "mqtt_tls", "twinsync_tls", "twinsync_mtls")
+SCENARIOS = ("mqtt", "mqtt_tls", "mqtt_mtls", "mqtt_mtls", "twinsync_tls", "twinsync_mtls")
 RESULTS = Path(__file__).resolve().parent / "results"
 
 
